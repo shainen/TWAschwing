@@ -13,7 +13,7 @@ steps=500;
 times=Range[0,tmax,tmax/(steps-1)];
 
 
-runs=1;
+runs=1000;
 
 
 length=12;
@@ -41,10 +41,10 @@ add3[num_]:=Mod[num-1,3]+1
 addl[num_]:=Mod[num-1,length]+1
 
 
-bos4dot[s_,a_,ham_]:=-I D[ham,sbos4[s][a][t]]/.sbos4[ss_][xx_][t]->bos4[ss][xx][t]\[Conjugate]
+bosdot[su_,s_,a_,ham_]:=-I D[ham,boscc[su][s][a][t]]/.boscc[su][ss_][xx_][t]->bos[su][ss][xx][t]\[Conjugate]
 
 
-bos2dot[s_,a_,ham_]:=-I D[ham,sbos2[s][a][t]]/.sbos2[ss_][xx_][t]->bos2[ss][xx][t]\[Conjugate]
+(*bos2dot[s_,a_,ham_]:=-\[ImaginaryI] D[ham,sbos2[s][a][t]]/.sbos2[ss_][xx_][t]->bos2[ss][xx][t]\[Conjugate]*)
 
 
 (* ::Subsection:: *)
@@ -57,22 +57,25 @@ smat[s_]:=PauliMatrix[s]/2
 bmat[s1_,s2_]:=KroneckerProduct[PauliMatrix[s1],PauliMatrix[s2]]/If[s1==0||s2==0,2,4]
 
 
-vecsbos2[ss_]:=sbos4[ss][#][t]&/@Range[2]
+vecboscc[su_][ss_][t_]:=boscc[su][ss][#][t]&/@Range[su]
 
 
-vecbos2[ss_]:=bos4[ss][#][t]&/@Range[2]
+vecbos[su_][ss_][t_]:=bos[su][ss][#][t]&/@Range[su]
 
 
-vecsbos4[ss_]:=sbos4[ss][#][t]&/@Range[4]
+(*vecbos4nt[ss_]:=bos4[ss][#]&/@Range[4]*)
 
 
-vecbos4[ss_]:=bos4[ss][#][t]&/@Range[4]
+(*vecbos2nt[ss_]:=bos2[ss][#]&/@Range[2]*)
 
 
-cS[ss_][xx_][t]:=Which[MemberQ[bsites,addl[ss]],vecsbos4[ss].bmat[xx,0].vecbos4[ss],MemberQ[addl/@(bsites+1),addl[ss]],vecsbos4[ss].bmat[0,xx].vecbos4[ss],True,vecsbos2[ss].smat[xx].vecbos2[ss]]
+cS[ss_][xx_][t_]:=Which[MemberQ[bsites,addl[ss]],vecboscc[4][ss][t].bmat[xx,0].vecbos[4][ss][t],MemberQ[addl/@(bsites+1),addl[ss]],vecboscc[4][addl[ss-1]][t].bmat[0,xx].vecbos[4][addl[ss-1]][t],True,vecboscc[2][ss][t].smat[xx].vecbos[2][ss][t]]
 
 
-cB[ss_][xx_,yy_][t]:=vecsbos4[ss].bmat[xx,yy].vecbos4[ss]
+(*cS[ss_][xx_]:=Which[MemberQ[bsites,addl[ss]],vecbos4nt[ss]\[Conjugate].bmat[xx,0].vecbos4nt[ss],MemberQ[addl/@(bsites+1),addl[ss]],vecbos4nt[addl[ss-1]]\[Conjugate].bmat[0,xx].vecbos4nt[addl[ss-1]],True,vecbos2nt[ss]\[Conjugate].smat[xx].vecbos2nt[ss]]*)
+
+
+cB[ss_][xx_,yy_][t_]:=vecboscc[4][ss][t].bmat[xx,yy].vecbos[4][ss][t]
 
 
 (* ::Subsection:: *)
@@ -98,13 +101,13 @@ hamcoupsu4[ss_]:=If[MemberQ[bsites,addl[ss]],bcoup[addl[ss]],sscoup[addl[ss]]]
 (*hamcoupsu2[ss_]:=sscoup[addl[ss]]*)
 
 
-eqss4=Table[bos2[addl[ss]][aa]'[t]==bos2dot[addl[ss],aa,hamself[addl[ss]]+hamcoupsu4[addl[ss]]+hamcoupsu4[addl[ss-1]]],{ss,Complement[Range[length],bsites,addl/@(bsites+1)]},{aa,2}];
+(*eqss4=Table[bos[2][addl[ss]][aa]'[t]==bos2dot[addl[ss],aa,hamself[addl[ss]]+hamcoupsu4[addl[ss]]+hamcoupsu4[addl[ss-1]]],{ss,Complement[Range[length],bsites,addl/@(bsites+1)]},{aa,2}];*)
 
 
-eqsb4=Table[bos4[addl[ss]][aa]'[t]==bos4dot[addl[ss],aa,hamself[addl[ss]]+hamself[addl[ss+1]]+hamcoupsu4[addl[ss]]+hamcoupsu4[addl[ss-1]]+hamcoupsu4[addl[ss+1]]],{ss,bsites},{aa,4}];
+eqsb4=Table[bos[4][addl[ss]][aa]'[t]==bosdot[4,addl[ss],aa,hamself[addl[ss]]+hamself[addl[ss+1]]+hamcoupsu4[addl[ss]]+hamcoupsu4[addl[ss-1]]+hamcoupsu4[addl[ss+1]]],{ss,bsites},{aa,4}];
 
 
-eqall4=Flatten[{eqss4,eqsb4}];
+eqall4=Flatten[{(*eqss4,*)eqsb4}];
 
 
 (*eqss2=Table[bos2[addl[ss]][aa]'[t]==bos2dot[addl[ss],aa,hamself[addl[ss]]+hamcoupsu4[addl[ss]]+hamcoupsu4[addl[ss-1]]],{ss,length},{aa,2}];*)
@@ -120,91 +123,44 @@ eqall4=Flatten[{eqss4,eqsb4}];
 initspin={2,2,2,2,2,1,2,1,1,1,1,1};
 
 
-random[mean_,var_]:=If[var!=0,RandomVariate[NormalDistribution[mean,Sqrt[var]]],mean]
+(* ::Input:: *)
+(*vecud[s1_,s2_]:=Flatten[Normal[KroneckerProduct[SparseArray[{initspin[[addl[s1]]]}->1,{2}],SparseArray[{initspin[[addl[s2]]]}->1,{2}]]]]*)
 
 
-(* ::Subsubsection:: *)
-(*spins*)
+(* ::Input:: *)
+(*(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]\[Equal]((RandomVariate[NormalDistribution[#,1/2]]+\[ImaginaryI] RandomVariate[NormalDistribution[0,1/2]])&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)*)
 
 
-(*mean[op_,vec_]:=vec\[Conjugate].op.vec*)
-
-
-(*cov[op1_,op2_,vec_]:=vec\[Conjugate].(op1.op2+op2.op1).vec/2-vec\[Conjugate].op1.vec vec\[Conjugate].op2.vec*)
-
-
-(*spinmean=Table[mean[PauliMatrix[sp]/2,#],{sp,3}]&/@{{1,0},{0,1}};*)
-
-
-(*spincov=Table[cov[PauliMatrix[sp1]/2,PauliMatrix[sp2]/2,#],{sp1,3},{sp2,3}]&/@{{1,0},{0,1}};*)
-
-
-(*spincov=Table[0,{2},{3},{3}];*)
-
-
-(*initsS:=Table[cS[addl[ss]][sp][0]==random[spinmean[[initspin[[addl[ss]]],sp]],spincov[[initspin[[addl[ss]]],sp,sp]]],{ss,length},{sp,3}]*)
-
-
-(* ::Subsubsection:: *)
-(*bispins*)
-
-
-(*bindlist=Tuples[Range[3],2];*)
-
-
-(*cor[op1_,op2_,vec_]:=vec\[Conjugate].(op1.op2).vec*)
-
-
-(*spincor=Table[cor[PauliMatrix[sp1]/2,PauliMatrix[sp2]/2,#],{sp1,3},{sp2,3}]&/@{{1,0},{0,1}};*)
-
-
-(*bimean[ss_,sp1_,sp2_]:=spinmean[[initspin[[addl[ss]]],sp1]]spinmean[[initspin[[addl[ss+1]]],sp2]]*)
-
-
-(*bicov[ss_,sp1_,sp2_,sp3_,sp4_]:=(spincor[[initspin[[addl[ss]]],sp1,sp3]]spincor[[initspin[[addl[ss+1]]],sp2,sp4]]+spincor[[initspin[[addl[ss]]],sp3,sp1]]spincor[[initspin[[addl[ss+1]]],sp4,sp2]])/2-
-spinmean[[initspin[[addl[ss]]],sp1]]spinmean[[initspin[[addl[ss+1]]],sp2]]spinmean[[initspin[[addl[ss]]],sp3]]spinmean[[initspin[[addl[ss+1]]],sp4]]*)
-
-
-(*covmat[ss_]:=Outer[bicov@@Join[{addl[ss]},#1,#2]&,bindlist,bindlist,1]*)
-
-
-(*rotmat=Normalize/@Eigenvectors[covmat[addl[#]]]&/@Range[length];*)
-
-
-(*rotcov=Eigenvalues[covmat[addl[#]]]&/@Range[length];*)
-
-
-(*rotcov=Table[0,{12},{9}];*)
-
-
-(*rotmean=Table[rotmat[[ss]].(bimean@@Join[{addl[ss]},#]&/@bindlist),{ss,length}];*)
-
-
-(*initsB:=(
-initsrot=Table[random[rotmean[[ss,bv]],rotcov[[ss,bv]]],{ss,length},{bv,9}];
-initsorigbasis=MapThread[Dot,{Transpose[rotmat,{1,3,2}],initsrot},1];
-Table[((cB[addl[ss]])@@bindlist[[bi]])[0]\[Equal]initsorigbasis[[ss,bi]],{ss,bsites},{bi,9}]
-)*)
-
-
-inits
+(* ::Input:: *)
+(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==(If[#==0,(RandomVariate[NormalDistribution[0,1/2]]+I RandomVariate[NormalDistribution[0,1/2]]),Exp[I RandomReal[{0,2\[Pi]}]]]&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)
 
 
 (* ::Subsection:: *)
 (*run TWA*)
 
 
-eachTWA4=Table[solv=NDSolveValue[Flatten[{eqall4,initsS,initsB}],Flatten[Table[cS[addl[ss]][sp],{ss,length},{sp,3,3}]],{t,0,tmax}];{(Through[solv[#]]&/@times)\[Transpose],Total[(Through[solv[#]]Through[solv[0]]&/@times)\[Transpose]]/length},{rr,runs}];
-fullTWA4=Total[eachTWA4]/runs;
-sqTWA4=Total[eachTWA4^2]/runs;
+(* ::Input:: *)
+(*through2[funclist_,value_]:=Map[#[value]&,funclist,{2}]*)
 
 
-eachTWA2=Table[solv=NDSolveValue[Flatten[{eqall2,initsS}],Flatten[Table[cS[addl[ss]][sp],{ss,length},{sp,3,3}]],{t,0,tmax}];{(Through[solv[#]]&/@times)\[Transpose],Total[(Through[solv[#]]Through[solv[0]]&/@times)\[Transpose]]/length},{rr,runs}];
+(* ::Input:: *)
+(*eachTWA4=Table[*)
+(*solv=NDSolveValue[Flatten[{eqall4,inits4}],Table[bos[4][addl[ss]][bn],{ss,bsites},{bn,4}],{t,0,tmax}];*)
+(*bosvals=Map[through2[solv,#]&,times];*)
+(*szvals=Flatten[Map[{#\[Conjugate].bmat[3,0].#,#\[Conjugate].bmat[0,3].#}&,bosvals,{2}],{2,3}];*)
+(*szcor=szvals szvals[[All,1]];*)
+(*Chop[{szvals,Total[szcor]/length}]*)
+(*,{rr,runs}];*)
+(*fullTWA4=Total[eachTWA4]/runs;*)
+(*sqTWA4=Total[eachTWA4^2]/runs;*)
+
+
+(*eachTWA2=Table[solv=NDSolveValue[Flatten[{eqall2,initsS}],Flatten[Table[cS[addl[ss]][sp],{ss,length},{sp,3,3}]],{t,0,tmax}];{(Through[solv[#]]&/@times)\[Transpose],Total[(Through[solv[#]]Through[solv[0]]&/@times)\[Transpose]]/length},{rr,runs}];
 fullTWA2=Total[eachTWA2]/runs;
-sqTWA2=Total[eachTWA2^2]/runs;
+sqTWA2=Total[eachTWA2^2]/runs;*)
 
 
-mmu=MaxMemoryUsed[]/10.^6;
+(*mmu=MaxMemoryUsed[]/10.^6;*)
 
 
-Save["12site.dat",{mmu,fullTWA2,sqTWA2,fullTWA4,sqTWA4}];
+(*Save["12site.dat",{mmu,fullTWA2,sqTWA2,fullTWA4,sqTWA4}];*)
