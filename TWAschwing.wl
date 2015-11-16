@@ -13,7 +13,7 @@ steps=500;
 times=Range[0,tmax,tmax/(steps-1)];
 
 
-runs=100000;
+runs=100;
 
 
 length=12;
@@ -123,23 +123,51 @@ eqall4=Flatten[{(*eqss4,*)eqsb4}];
 initspin={2,2,2,2,2,1,2,1,1,1,1,1};
 
 
-(* ::Input:: *)
-(*vecud[2][ss_]:=Normal[SparseArray[{initspin[[addl[ss]]]}->1,{2}]]*)
+vecud[2][ss_]:=Normal[SparseArray[{initspin[[addl[ss]]]}->1,{2}]]
 
 
-(* ::Input:: *)
-(*vecud[s1_,s2_]:=Flatten[KroneckerProduct[vecud[2][s1],vecud[2][s2]]]*)
+vecud[s1_,s2_]:=Flatten[KroneckerProduct[vecud[2][s1],vecud[2][s2]]]
 
 
-(* ::Input:: *)
-(*(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==((RandomVariate[NormalDistribution[#,1/2]]+I RandomVariate[NormalDistribution[0,1/2]])&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)*)
+(* ::Subsubsection:: *)
+(*Exact Wig setups*)
 
 
-(* ::Input:: *)
-(*(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==(If[#==0,(RandomVariate[NormalDistribution[0,1/2]]+I RandomVariate[NormalDistribution[0,1/2]]),Sqrt[3/2]Exp[I RandomReal[{0,2\[Pi]}]]]&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)*)
+(* ::Code:: *)
+(*norm1=(4-Sqrt[E])/Sqrt[E];*)
 
 
-(* ::Input:: *)
+(* ::Code:: *)
+(*Fock1Mag=ProbabilityDistribution[4 a E^(-2 a^2) Abs[(4a^2-1)]/Norm1,{a,0,\[Infinity]}];*)
+
+
+randmag=RandomVariate[Fock1Mag,{Length[bsites],runs}];
+
+
+metric=(1-2UnitStep[1/2-randmag])\[Transpose];
+
+
+metricperrun=Fold[Times,#]&/@metric;
+
+
+randphase=RandomReal[{0,2\[Pi]},{Length[bsites],runs}];
+
+
+randvac=RandomVariate[NormalDistribution[0,1/2],{4,Length[bsites],runs}]+I RandomVariate[NormalDistribution[0,1/2],{4,Length[bsites],runs}];
+
+
+initialvalues=Transpose[Table[Table[If[vecud[addl[bsites[[ss]]],addl[bsites[[ss]]+1]][[sp]]==0,randvac[[sp,ss]],randmag[[ss]] Exp[I randphase[[ss]]]],{sp,4}],{ss,Length[bsites]}],{2,3,1}];
+
+
+inits4[rr_]:=Table[Thread[bos[4][addl[bsites[[ss]]]][#][0]&/@Range[4]==initialvalues[[rr,ss]]],{ss,Length[bsites]}]
+
+
+(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==((RandomVariate[NormalDistribution[#,1/2]]+I RandomVariate[NormalDistribution[0,1/2]])&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)
+
+
+(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==(If[#==0,(RandomVariate[NormalDistribution[0,1/2]]+I RandomVariate[NormalDistribution[0,1/2]]),Sqrt[3/2]Exp[I RandomReal[{0,2\[Pi]}]]]&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)
+
+
 (*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==(If[#==0,(RandomVariate[NormalDistribution[0,1/2]]+I RandomVariate[NormalDistribution[0,1/2]]),RandomVariate[NormalDistribution[17^(1/4)/2^(3/4),Sqrt[6-Sqrt[34]]/2]]Exp[I RandomReal[{0,2\[Pi]}]]]&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)
 
 
@@ -147,20 +175,17 @@ initspin={2,2,2,2,2,1,2,1,1,1,1,1};
 (*run TWA*)
 
 
-(* ::Input:: *)
-(*through2[funclist_,value_]:=Map[#[value]&,funclist,{2}]*)
+through2[funclist_,value_]:=Map[#[value]&,funclist,{2}]
 
 
-(* ::Input:: *)
-(*eachTWA4=Table[*)
-(*solv=NDSolveValue[Flatten[{eqall4,inits4}],Table[bos[4][addl[ss]][bn],{ss,bsites},{bn,4}],{t,0,tmax}];*)
-(*bosvals=Map[through2[solv,#]&,times];*)
-(*szvals=Flatten[Map[{#\[Conjugate].bmat[3,0].#,#\[Conjugate].bmat[0,3].#}&,bosvals,{2}],{2,3}];*)
-(*szcor=szvals szvals[[All,1]];*)
-(*Chop[{szvals,Total[szcor]/length}]*)
-(*,{rr,runs}];*)
-(*fullTWA4=Total[eachTWA4]/runs;*)
-(*sqTWA4=Total[eachTWA4^2]/runs;*)
+eachTWA4=Table[
+solv=NDSolveValue[Flatten[{eqall4,inits4[rr]}],Table[bos[4][addl[ss]][bn],{ss,bsites},{bn,4}],{t,0,tmax}];
+bosvals=Map[through2[solv,#]&,times];
+szvals=Flatten[Map[{#\[Conjugate].bmat[3,0].#,#\[Conjugate].bmat[0,3].#}&,bosvals,{2}],{2,3}];
+szcor=szvals szvals[[All,1]]-0.25;
+Chop[{szvals,Total[szcor]/length}]
+,{rr,runs}];
+fullTWA4=Total[norm1^Length[bsites] metricperrun eachTWA4]/runs;
 
 
 (*eachTWA2=Table[solv=NDSolveValue[Flatten[{eqall2,initsS}],Flatten[Table[cS[addl[ss]][sp],{ss,length},{sp,3,3}]],{t,0,tmax}];{(Through[solv[#]]&/@times)\[Transpose],Total[(Through[solv[#]]Through[solv[0]]&/@times)\[Transpose]]/length},{rr,runs}];
@@ -168,7 +193,7 @@ fullTWA2=Total[eachTWA2]/runs;
 sqTWA2=Total[eachTWA2^2]/runs;*)
 
 
-(*mmu=MaxMemoryUsed[]/10.^6;*)
+mmu=MaxMemoryUsed[]/10.^6;
 
 
-(*Save["12site.dat",{mmu,fullTWA2,sqTWA2,fullTWA4,sqTWA4}];*)
+Save["12site.dat",{mmu,fullTWA4,sqTWA4}];
