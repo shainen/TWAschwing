@@ -13,13 +13,13 @@ steps=500;
 times=Range[0,tmax,tmax/(steps-1)];
 
 
-runs=1000;
+runs=100000;
 
 
 length=12;
 
 
-bsites=Range[2,length,2];
+bsites=Range[1,length-1,2];
 
 
 j=-1;
@@ -124,15 +124,23 @@ initspin={2,2,2,2,2,1,2,1,1,1,1,1};
 
 
 (* ::Input:: *)
-(*vecud[s1_,s2_]:=Flatten[Normal[KroneckerProduct[SparseArray[{initspin[[addl[s1]]]}->1,{2}],SparseArray[{initspin[[addl[s2]]]}->1,{2}]]]]*)
+(*vecud[2][ss_]:=Normal[SparseArray[{initspin[[addl[ss]]]}->1,{2}]]*)
 
 
 (* ::Input:: *)
-(*(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]\[Equal]((RandomVariate[NormalDistribution[#,1/2]]+\[ImaginaryI] RandomVariate[NormalDistribution[0,1/2]])&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)*)
+(*vecud[s1_,s2_]:=Flatten[KroneckerProduct[vecud[2][s1],vecud[2][s2]]]*)
 
 
 (* ::Input:: *)
-(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==(If[#==0,(RandomVariate[NormalDistribution[0,1/2]]+I RandomVariate[NormalDistribution[0,1/2]]),Exp[I RandomReal[{0,2\[Pi]}]]]&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)
+(*(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==((RandomVariate[NormalDistribution[#,1/2]]+I RandomVariate[NormalDistribution[0,1/2]])&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)*)
+
+
+(* ::Input:: *)
+(*(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==(If[#==0,(RandomVariate[NormalDistribution[0,1/2]]+I RandomVariate[NormalDistribution[0,1/2]]),Sqrt[3/2]Exp[I RandomReal[{0,2\[Pi]}]]]&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)*)
+
+
+(* ::Input:: *)
+(*inits4:=Table[Thread[bos[4][addl[ss]][#][0]&/@Range[4]==(If[#==0,(RandomVariate[NormalDistribution[0,1/2]]+I RandomVariate[NormalDistribution[0,1/2]]),RandomVariate[NormalDistribution[17^(1/4)/2^(3/4),Sqrt[6-Sqrt[34]]/2]]Exp[I RandomReal[{0,2\[Pi]}]]]&/@vecud[addl[ss],addl[ss+1]])],{ss,bsites}]*)
 
 
 (* ::Subsection:: *)
