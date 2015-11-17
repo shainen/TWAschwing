@@ -13,7 +13,7 @@ steps=500;
 times=Range[0,tmax,tmax/(steps-1)];
 
 
-runs=100;
+runs=1000;
 
 
 length=12;
@@ -133,12 +133,10 @@ vecud[s1_,s2_]:=Flatten[KroneckerProduct[vecud[2][s1],vecud[2][s2]]]
 (*Exact Wig setups*)
 
 
-(* ::Code:: *)
-(*norm1=(4-Sqrt[E])/Sqrt[E];*)
+norm1=(4-Sqrt[E])/Sqrt[E];
 
 
-(* ::Code:: *)
-(*Fock1Mag=ProbabilityDistribution[4 a E^(-2 a^2) Abs[(4a^2-1)]/Norm1,{a,0,\[Infinity]}];*)
+Fock1Mag=ProbabilityDistribution[4 a E^(-2 a^2) Abs[(4a^2-1)],{a,0,\[Infinity]}];
 
 
 randmag=RandomVariate[Fock1Mag,{Length[bsites],runs}];
@@ -196,4 +194,4 @@ sqTWA2=Total[eachTWA2^2]/runs;*)
 mmu=MaxMemoryUsed[]/10.^6;
 
 
-Save["12site.dat",{mmu,fullTWA4,sqTWA4}];
+Save["12site.dat",{mmu,fullTWA4}];
