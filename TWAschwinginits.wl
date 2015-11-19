@@ -173,4 +173,4 @@ inits4[rr_]:=Table[Thread[bos[4][addl[bsites[[ss]]]][#][0]&/@Range[4]==initialva
 (*run TWA*)
 
 
-Save["theinits.dat",{metricperrun,initialvalues}];
+Save["theinits.dat",{metricperrun,randmag}];
