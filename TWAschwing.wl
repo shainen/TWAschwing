@@ -136,7 +136,7 @@ vecud[s1_,s2_]:=Flatten[KroneckerProduct[vecud[2][s1],vecud[2][s2]]]
 norm1=(4-Sqrt[E])/Sqrt[E];
 
 
-Fock1Mag=ProbabilityDistribution[4 a E^(-2 a^2) Abs[(4a^2-1)],{a,0,\[Infinity]}];
+Fock1Mag=ProbabilityDistribution[4 a E^(-2 a^2) Abs[(4a^2-1)]/norm1,{a,0,\[Infinity]}];
 
 
 randmag=RandomVariate[Fock1Mag,{Length[bsites],runs}];
